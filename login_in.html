@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
-<!-- [previous head content remains the same until the system-card style] -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>股票系統登入</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <style>
-        /* [Previous styles remain the same until system-card] */
         * {
             margin: 0;
             padding: 0;
@@ -20,15 +19,17 @@
             align-items: center;
             min-height: 100vh;
             background: #f0f2f5;
+            padding: 15px;
         }
 
-        .container {
+        #main-container {
             position: relative;
-            width: 800px;
-            height: 500px;
+            width: 100%;
+            max-width: 900px;
+            min-height: 500px;
             background: #fff;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            border-radius: 20px;
             overflow: hidden;
         }
 
@@ -53,11 +54,11 @@
             opacity: 0;
         }
 
-        .container.right-panel-active .sign-in-container {
+        #main-container.right-panel-active .sign-in-container {
             transform: translateX(100%);
         }
 
-        .container.right-panel-active .sign-up-container {
+        #main-container.right-panel-active .sign-up-container {
             transform: translateX(100%);
             opacity: 1;
             z-index: 5;
@@ -74,7 +75,7 @@
             z-index: 100;
         }
 
-        .container.right-panel-active .overlay-container {
+        #main-container.right-panel-active .overlay-container {
             transform: translateX(-100%);
         }
 
@@ -96,6 +97,9 @@
             flex-direction: column;
             align-items: center;
             gap: 20px;
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto;
         }
 
         .input-group {
@@ -145,6 +149,10 @@
             color: #333;
         }
 
+        .overlay h1 {
+            color: #fff;
+        }
+
         /* 儀表板樣式 */
         .dashboard {
             display: none;
@@ -152,6 +160,10 @@
             height: 100%;
             padding: 40px;
             text-align: center;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: #fff;
         }
 
         .system-cards {
@@ -174,20 +186,6 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .system-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(66, 133, 244, 0.1);
-            transform: translateY(100%);
-            transition: transform 0.3s ease;
         }
 
         .system-card:hover {
@@ -195,32 +193,15 @@
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
         }
 
-        .system-card:hover::before {
-            transform: translateY(0);
-        }
-
-        .system-card:active {
-            transform: scale(0.98);
-        }
-
         .system-card h2 {
             margin-bottom: 15px;
             color: #333;
-            position: relative;
-            z-index: 1;
         }
 
         .system-card p {
             color: #666;
             font-size: 0.9em;
             line-height: 1.5;
-            position: relative;
-            z-index: 1;
-        }
-
-        .welcome-text {
-            margin-bottom: 30px;
-            color: #333;
         }
 
         .logout-btn {
@@ -234,19 +215,119 @@
         .logout-btn:hover {
             background: #d32f2f;
         }
+
+        /* 用戶面板樣式 */
+        .user-dashboard {
+            position: fixed;
+            right: -350px;
+            top: 0;
+            width: 350px;
+            height: 100%;
+            background: white;
+            box-shadow: -4px 0 10px rgba(0,0,0,0.1);
+            transition: right 0.4s ease;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-dashboard.active {
+            right: 0;
+        }
+
+        .profile-section {
+            padding: 30px 20px;
+            background: #f8f9fa;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 15px;
+            border-radius: 50%;
+            background: #4285f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .profile-avatar i {
+            font-size: 40px;
+            color: white;
+        }
+
+        .dashboard-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .close-dashboard {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #666;
+            padding: 5px;
+        }
+
+        .dashboard-content {
+            padding: 20px;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        .settings-group {
+            margin-bottom: 20px;
+        }
+
+        .settings-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #666;
+        }
+
+        .save-settings {
+            width: 100%;
+        }
+
+        .open-dashboard {
+            position: fixed;
+            right: 20px;
+            top: 20px;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: #4285f4;
+            color: white;
+            border: none;
+            cursor: pointer;
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .open-dashboard i {
+            font-size: 20px;
+        }
     </style>
 </head>
 <body>
-    <div class="container" id="container">
+    <!-- 主容器 -->
+    <div id="main-container">
         <!-- 登入表單 -->
         <div class="form-container sign-in-container">
             <form id="loginForm">
                 <h1>登入系統</h1>
                 <div class="input-group">
-                    <input type="text" placeholder="帳號" id="username" />
+                    <input type="text" placeholder="帳號" id="username" required />
                 </div>
                 <div class="input-group">
-                    <input type="password" placeholder="密碼" id="password" />
+                    <input type="password" placeholder="密碼" id="password" required />
                 </div>
                 <button type="submit">登入</button>
             </form>
@@ -257,13 +338,13 @@
             <form id="registerForm">
                 <h1>建立帳號</h1>
                 <div class="input-group">
-                    <input type="text" placeholder="帳號" />
+                    <input type="text" placeholder="帳號" required />
                 </div>
                 <div class="input-group">
-                    <input type="email" placeholder="電子郵件" />
+                    <input type="email" placeholder="電子郵件" required />
                 </div>
                 <div class="input-group">
-                    <input type="password" placeholder="密碼" />
+                    <input type="password" placeholder="密碼" required />
                 </div>
                 <button type="submit">註冊</button>
             </form>
@@ -296,54 +377,161 @@
         </div>
     </div>
 
-    <script>
-        const signUpButton = document.getElementById('signUp');
-        const signInButton = document.getElementById('signIn');
-        const container = document.getElementById('container');
-        const loginForm = document.getElementById('loginForm');
-        const dashboard = document.getElementById('dashboard');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const backtestingCard = document.getElementById('backtesting-card');
-        const recommendationCard = document.getElementById('recommendation-card');
+    <!-- 用戶面板 -->
+    <div class="user-dashboard" id="userDashboard">
+        <div class="profile-section" id="profileToggle">
+            <div class="profile-avatar">
+                <i class="fas fa-user"></i>
+            </div>
+            <h3 id="userDisplayName">使用者名稱</h3>
+            <p>會員用戶</p>
+        </div>
+        <div class="dashboard-header">
+            <h2>個人設定</h2>
+            <button class="close-dashboard" id="closeDashboard">&times;</button>
+        </div>
+        <div class="dashboard-content">
+            <form id="userSettingsForm">
+                <div class="settings-group">
+                    <label>用戶名稱</label>
+                    <input type="text" id="settingsUsername" name="username" required>
+                </div>
+                <div class="settings-group">
+                    <label>電子信箱</label>
+                    <input type="email" id="settingsEmail" name="email" required>
+                </div>
+                <div class="settings-group">
+                    <label>更改密碼</label>
+                    <input type="password" id="settingsPassword" name="password" placeholder="留空則不變更">
+                </div>
+                <button type="submit" class="save-settings">儲存變更</button>
+            </form>
+        </div>
+    </div>
 
-        // 註冊和登入面板切換
-        signUpButton.addEventListener('click', () => {
-            container.classList.add('right-panel-active');
+    <!-- 設定按鈕 -->
+    <button class="open-dashboard" id="openDashboard">
+        <i class="fas fa-user"></i>
+    </button>
+<!-- 添加新的JavaScript代碼 -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+    // DOM 元素獲取
+    const signUpButton = document.getElementById('signUp');
+    const signInButton = document.getElementById('signIn');
+    const mainContainer = document.getElementById('main-container');  // 修正這裡
+    const loginForm = document.getElementById('loginForm');
+    const dashboard = document.getElementById('dashboard');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const backtestingCard = document.getElementById('backtesting-card');
+    const recommendationCard = document.getElementById('recommendation-card');
+    const userDashboard = document.getElementById('userDashboard');
+    const openBtn = document.getElementById('openDashboard');
+    const closeBtn = document.getElementById('closeDashboard');
+    const profileToggle = document.getElementById('profileToggle');
+    const settingsForm = document.getElementById('userSettingsForm');
+
+    // 註冊和登入面板切換
+    signUpButton.addEventListener('click', () => {
+        mainContainer.classList.add('right-panel-active');  // 修正這裡
+    });
+
+    signInButton.addEventListener('click', () => {
+        mainContainer.classList.remove('right-panel-active');  // 修正這裡
+    });
+
+    // 處理登入
+    loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+
+        if (username && password) {
+            document.querySelector('.sign-in-container').style.display = 'none';
+            document.querySelector('.overlay-container').style.display = 'none';
+            dashboard.style.display = 'block';
+            
+            // 更新用戶資料
+            updateUserInfo({
+                username: username,
+                email: username + '@example.com'
+            });
+        }
+    });
+
+    // 處理登出
+    logoutBtn.addEventListener('click', () => {
+        document.querySelector('.sign-in-container').style.display = 'block';
+        document.querySelector('.overlay-container').style.display = 'block';
+        dashboard.style.display = 'none';
+        loginForm.reset();
+        
+        // 確保用戶面板關閉
+        userDashboard.classList.remove('active');
+    });
+
+    // 系統卡片點擊事件
+    backtestingCard.addEventListener('click', () => {
+        window.location.href = '#backtesting';
+    });
+
+    recommendationCard.addEventListener('click', () => {
+        window.location.href = '#recommendation';
+    });
+
+    // 用戶面板相關功能
+    openBtn.addEventListener('click', () => {
+        userDashboard.classList.add('active');
+    });
+
+    closeBtn.addEventListener('click', () => {
+        userDashboard.classList.remove('active');
+    });
+
+    profileToggle?.addEventListener('click', () => {
+        userDashboard.classList.toggle('active');
+    });
+
+    // 處理設定表單提交
+    settingsForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const username = document.getElementById('settingsUsername').value;
+        const email = document.getElementById('settingsEmail').value;
+        const password = document.getElementById('settingsPassword').value;
+
+        if (!username || !email) {
+            alert('請填寫用戶名稱和電子信箱');
+            return;
+        }
+
+        document.getElementById('userDisplayName').textContent = username;
+
+        console.log('儲存設定:', {
+            username,
+            email,
+            passwordChanged: !!password
         });
 
-        signInButton.addEventListener('click', () => {
-            container.classList.remove('right-panel-active');
-        });
+        alert('設定已儲存');
+        document.getElementById('settingsPassword').value = '';
+    });
 
-        // 處理登入
-        loginForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
+    // 點擊外部關閉面板
+    document.addEventListener('click', (e) => {
+        if (userDashboard.classList.contains('active') && 
+            !userDashboard.contains(e.target) && 
+            !openBtn.contains(e.target)) {
+            userDashboard.classList.remove('active');
+        }
+    });
 
-            if (username && password) {
-                document.querySelector('.sign-in-container').style.display = 'none';
-                document.querySelector('.overlay-container').style.display = 'none';
-                dashboard.style.display = 'block';
-            }
-        });
-
-        // 處理登出
-        logoutBtn.addEventListener('click', () => {
-            document.querySelector('.sign-in-container').style.display = 'block';
-            document.querySelector('.overlay-container').style.display = 'block';
-            dashboard.style.display = 'none';
-            loginForm.reset();
-        });
-
-        // 系統卡片點擊事件
-        backtestingCard.addEventListener('click', () => {
-            window.location.href = '#backtesting';
-        });
-
-        recommendationCard.addEventListener('click', () => {
-            window.location.href = '#recommendation';
-        });
-    </script>
+    // 更新用戶資料的函數
+    function updateUserInfo(userData) {
+        document.getElementById('userDisplayName').textContent = userData.username;
+        document.getElementById('settingsUsername').value = userData.username;
+        document.getElementById('settingsEmail').value = userData.email;
+    }
+});
+</script>  
 </body>
 </html>
