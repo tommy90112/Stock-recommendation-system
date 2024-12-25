@@ -2,17 +2,15 @@ import pandas as pd
 import psycopg2
 from datetime import datetime
 import logging
-import schedule
-import time
 from pathlib import Path
 import os
 
-class StockPriceScheduler:
-    def __init__(self, excel_path):
+class ExcelSheetImporter:
+    def __init__(self):
         # 設定日誌
         log_dir = Path.home() / "stock_logs"
         log_dir.mkdir(exist_ok=True)
-        log_file = log_dir / "stock_update.log"
+        log_file = log_dir / "stock_import.log"
         
         logging.basicConfig(
             filename=str(log_file),
@@ -20,23 +18,47 @@ class StockPriceScheduler:
             format='%(asctime)s - %(levelname)s - %(message)s'
         )
         
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.INFO)
-        logging.getLogger().addHandler(console_handler)
-        
-        self.excel_path = excel_path
-        if not os.path.exists(excel_path):
-            raise FileNotFoundError(f"找不到 Excel 檔案: {excel_path}")
-            
         self.db_params = {
-            'dbname': 'stockprice',
+            'dbname': 'stock_recommendation_system',
             'user': 'test',
             'password': '123456',
             'host': 'localhost',
             'port': '5433'
         }
+        
+        # 定義頁籤和表的對應關係
+        self.sheet_table_mapping = {
+            '金融': 'finance_prices',
+            '營建': 'construction_prices',
+            '航運': 'shipping_prices',
+            '半導體': 'semiconductor_prices',
+            '電子零組件': 'electronic_component_prices',
+            'ETF': 'etf_prices'
+        }
+
+    def create_tables(self, conn):
+        """建立所有必要的資料表"""
+        cur = conn.cursor()
+        
+        for table_name in self.sheet_table_mapping.values():
+            cur.execute(f"""
+                DROP TABLE IF EXISTS {table_name};
+                CREATE TABLE {table_name} (
+                    id SERIAL PRIMARY KEY,
+                    stock_code VARCHAR(20),
+                    date DATE,
+                    close_price FLOAT,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+                CREATE INDEX idx_{table_name}_stock_code 
+                ON {table_name}(stock_code);
+            """)
+        
+        conn.commit()
+        logging.info("所有資料表建立完成")
 
     def process_value(self, value): 
+        """處理價格值，並四捨五入到小數點第二位"""
         try:
             if isinstance(value, str):
                 cleaned_value = value.replace('$', '').strip()
@@ -46,25 +68,23 @@ class StockPriceScheduler:
             logging.error(f"價格轉換錯誤: {value}, 錯誤: {str(e)}")
             raise
 
-    def read_latest_prices(self):
+    def read_sheet_data(self, excel_path, sheet_name):
+        """讀取指定頁籤的數據"""
         try:
-            logging.info(f"開始讀取Excel檔案: {self.excel_path}")
+            logging.info(f"開始讀取頁籤 {sheet_name}")
             
-            # 讀取 Excel 文件
-            df = pd.read_excel(self.excel_path, header=None, skiprows=2)
-            df_codes = pd.read_excel(self.excel_path, header=None, nrows=1)
-            logging.info(f"Excel檔案大小: {df.shape}")
+            # 讀取Excel檔案，獲取股票代碼行
+            df_codes = pd.read_excel(excel_path, sheet_name=sheet_name, header=None, nrows=1)
+            # 讀取價格數據，跳過前兩行
+            df = pd.read_excel(excel_path, sheet_name=sheet_name, header=None, skiprows=2)
             
-            # 處理日期列
-            # 將數值型日期轉換為 datetime
+            # 處理日期欄
             base_date = pd.Timestamp('1899-12-30')
             latest_date_idx = len(df) - 1
             days = df.iloc[latest_date_idx, 0]
             actual_date = base_date + pd.Timedelta(days=int(days))
             
-            logging.info(f"使用Excel中的最新日期: {actual_date.strftime('%Y-%m-%d')}")
-            
-            latest_prices = []
+            stock_data = []
             
             # 處理每支股票的代碼和對應價格
             for col in range(0, df.shape[1], 2):
@@ -73,7 +93,6 @@ class StockPriceScheduler:
                     if not isinstance(stock_code, str) or not stock_code.startswith('XTAI:'):
                         continue
                     
-                    # 取得對應日期的價格
                     price = df.iloc[latest_date_idx, col + 1]
                     
                     if pd.notna(price):
@@ -83,123 +102,93 @@ class StockPriceScheduler:
                             if price_value <= 0:
                                 logging.warning(f"股票 {stock_code} 價格異常: {price_value}")
                                 continue
-                            
-                            stock_data = {
+                                
+                            stock_data.append({
                                 'stock_code': stock_code,
                                 'date': actual_date.date(),
                                 'close_price': price_value
-                            }
-                            latest_prices.append(stock_data)
-                            logging.info(f"成功讀取: {stock_code}, 日期={actual_date.strftime('%Y-%m-%d')}, 價格={price_value}")
+                            })
                             
                         except Exception as e:
-                            logging.error(f"處理股票 {stock_code} 價格時發生錯誤: {str(e)}")
+                            logging.error(f"處理股票 {stock_code} 數據時發生錯誤: {str(e)}")
                             continue
-                    
+                            
                 except Exception as e:
-                    logging.error(f"處理第 {col} 欄資料時發生錯誤: {str(e)}")
+                    logging.error(f"處理第 {col} 列數據時發生錯誤: {str(e)}")
                     continue
             
-            logging.info(f"總共讀取到 {len(latest_prices)} 支股票的資料")
-            return latest_prices
+            logging.info(f"頁籤 {sheet_name} 共讀取到 {len(stock_data)} 支股票的數據")
+            return stock_data
             
         except Exception as e:
-            logging.error(f"讀取Excel檔案失敗: {str(e)}")
-            return None
+            logging.error(f"讀取頁籤 {sheet_name} 時發生錯誤: {str(e)}")
+            return []
 
-    def update_stock_prices(self):
-        """更新股票價格到資料庫"""
-        logging.info("開始執行股價更新")
+    def import_all_sheets(self, excel_path):
+        """匯入所有頁籤的數據"""
         conn = None
-        cur = None
-        
         try:
-            logging.info("嘗試連接資料庫...")
+            logging.info("開始匯入所有頁籤數據")
             conn = psycopg2.connect(**self.db_params)
-            cur = conn.cursor()
-            logging.info("資料庫連接成功")
             
-            cur.execute("DROP TABLE IF EXISTS stock_prices")
-            conn.commit()
+            # 建立所有必要的表
+            self.create_tables(conn)
             
-            cur.execute("""
-                CREATE TABLE stock_prices (
-                    id SERIAL PRIMARY KEY,
-                    stock_code VARCHAR(20) UNIQUE,
-                    date DATE,
-                    close_price FLOAT,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            conn.commit()
-            logging.info("資料表建立成功")
+            total_imported = 0
             
-            latest_prices = self.read_latest_prices()
-            if not latest_prices:
-                logging.error("無法取得股價資料")
-                return
+            # 處理每個頁籤
+            for sheet_name, table_name in self.sheet_table_mapping.items():
+                try:
+                    stock_data = self.read_sheet_data(excel_path, sheet_name)
+                    
+                    if stock_data:
+                        cur = conn.cursor()
+                        imported_count = 0
+                        
+                        for data in stock_data:
+                            cur.execute(f"""
+                                INSERT INTO {table_name} (stock_code, date, close_price)
+                                VALUES (%s, %s, %s)
+                            """, (
+                                data['stock_code'],
+                                data['date'],
+                                data['close_price']
+                            ))
+                            imported_count += 1
+                        
+                        conn.commit()
+                        total_imported += imported_count
+                        logging.info(f"成功匯入 {imported_count} 筆數據到表 {table_name}")
+                        
+                except Exception as e:
+                    logging.error(f"處理頁籤 {sheet_name} 時發生錯誤: {str(e)}")
+                    conn.rollback()
+                    continue
             
-            updated_count = 0
-            for price_data in latest_prices:
-                cur.execute("""
-                    INSERT INTO stock_prices (stock_code, date, close_price)
-                    VALUES (%s, %s, %s)
-                    ON CONFLICT (stock_code) 
-                    DO UPDATE SET 
-                        date = EXCLUDED.date,
-                        close_price = EXCLUDED.close_price,
-                        updated_at = CURRENT_TIMESTAMP;
-                """, (
-                    price_data['stock_code'],
-                    price_data['date'],
-                    price_data['close_price']
-                ))
-                updated_count += 1
-            
-            conn.commit()
-            logging.info(f"成功更新 {updated_count} 支股票的價格")
-            print(f"成功更新 {updated_count} 支股票的價格")
+            logging.info(f"所有頁籤匯入完成，共匯入 {total_imported} 筆數據")
+            return total_imported
             
         except Exception as e:
-            logging.error(f"更新資料時發生錯誤: {str(e)}")
+            logging.error(f"匯入過程中發生錯誤: {str(e)}")
             if conn:
                 conn.rollback()
+            return 0
+            
         finally:
-            if cur:
-                cur.close()
             if conn:
                 conn.close()
-
-    def run_scheduler(self):
-        """執行排程"""
-        try:
-            print("執行初始更新...")
-            self.update_stock_prices()
-            
-            schedule.every().day.at("20:00").do(self.update_stock_prices)
-            print("排程器已啟動，將於每天晚上8點執行更新")
-            print("程式持續運行中... (按 Ctrl+C 可終止程式)")
-            
-            while True:
-                schedule.run_pending()
-                time.sleep(60)
-                
-        except KeyboardInterrupt:
-            print("\n程式已停止")
-            logging.info("程式被使用者終止")
-        except Exception as e:
-            logging.error(f"排程執行時發生錯誤: {str(e)}")
-            raise
 
 def main():
     try:
         excel_path = "/Users/tommy/Desktop/資料庫/資料庫20大股池資料.xlsx"
         if not os.path.exists(excel_path):
-            print(f"錯誤: 找不到 Excel 檔案: {excel_path}")
+            print(f"錯誤: 找不到Excel檔案: {excel_path}")
             return
             
-        scheduler = StockPriceScheduler(excel_path)
-        scheduler.run_scheduler()
+        importer = ExcelSheetImporter()
+        total_imported = importer.import_all_sheets(excel_path)
+        print(f"成功匯入 {total_imported} 筆數據")
+        
     except Exception as e:
         logging.error(f"程式執行時發生錯誤: {str(e)}")
         print(f"錯誤: {str(e)}")
