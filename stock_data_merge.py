@@ -5,7 +5,6 @@ from datetime import datetime
 
 class StockDataMerger:
     def __init__(self):
-        # 設定資料庫連線參數
         self.db_params = {
             'dbname': 'stock_recommendation_system',
             'user': 'test',
@@ -13,14 +12,12 @@ class StockDataMerger:
             'host': 'localhost',
             'port': '5433'
         }
-        
-        # 設定日誌
+
         logging.basicConfig(
             level=logging.INFO,
             format='%(asctime)s - %(levelname)s - %(message)s'
         )
         
-        # 定義產業列表
         self.industries = [
             "金融",
             "營建",
@@ -29,8 +26,6 @@ class StockDataMerger:
             "電子零組件",
             "ETF"
         ]
-        
-        # 產業對應的資料表名稱
         self.table_mapping = {
             "金融": ("finance_value", "finance_prices"),
             "營建": ("construction_value", "construction_prices"),
@@ -41,11 +36,9 @@ class StockDataMerger:
         }
 
     def create_merged_table(self, conn) -> None:
-        """創建合併後的總表"""
         try:
             cursor = conn.cursor()
-            
-            # 創建新表
+
             cursor.execute("""
                 DROP TABLE IF EXISTS stock_all_industry_merge;
                 CREATE TABLE stock_all_industry_merge (
@@ -70,12 +63,10 @@ class StockDataMerger:
             raise
 
     def merge_industry_data(self, conn, industry: str) -> None:
-        """合併特定產業的數據"""
         try:
             cursor = conn.cursor()
             value_table, price_table = self.table_mapping[industry]
             
-            # 構建插入查詢
             insert_query = f"""
                 INSERT INTO stock_all_industry_merge (
                     stock_code,
@@ -101,7 +92,6 @@ class StockDataMerger:
             cursor.execute(insert_query, (industry,))
             conn.commit()
             
-            # 獲取插入的行數
             cursor.execute("SELECT COUNT(*) FROM stock_all_industry_merge WHERE industry_type = %s", (industry,))
             count = cursor.fetchone()[0]
             logging.info(f"成功合併 {industry} 產業資料，插入 {count} 筆記錄")
@@ -112,11 +102,9 @@ class StockDataMerger:
             raise
 
     def create_indexes(self, conn) -> None:
-        """為合併表創建索引"""
         try:
             cursor = conn.cursor()
             
-            # 創建索引
             cursor.execute("""
                 CREATE INDEX IF NOT EXISTS idx_all_merge_stock_code 
                 ON stock_all_industry_merge(stock_code);
@@ -137,7 +125,6 @@ class StockDataMerger:
             raise
 
     def merge_all_data(self) -> None:
-        """執行所有資料的合併操作"""
         conn = None
         try:
             # 建立資料庫連線

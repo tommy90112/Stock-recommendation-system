@@ -12,10 +12,8 @@ class IndustryType(Enum):
     ETF = "ETF"
 
 def create_tables(conn):
-    """建立所有必要的資料表並新增欄位"""
     
     def add_fair_price_range_column(cursor, table_name):
-        """檢查並添加合理價格區間欄位"""
         try:
             cursor.execute(f"""
             ALTER TABLE {table_name}
@@ -78,7 +76,6 @@ def create_tables(conn):
     print("所有資料表建立完成並確保欄位存在")
 
 def read_excel_data(file_path: str, sheet_name: str) -> List[Dict]:
-    """從Excel檔案讀取特定頁籤的股票數據"""
     try:
         # 讀取Excel檔案的特定頁籤
         df = pd.read_excel(file_path, sheet_name=sheet_name)
@@ -172,9 +169,7 @@ def save_to_database(stocks_data: List[Dict], industry_type: str):
         if not table_name:
             raise ValueError(f"未支援的產業類型: {industry_type}")
 
-        # 批次插入或更新數據
         for stock in stocks_data:
-            # 計算合理價格區間
             fair_price_range = None
             
             if industry_type in ['金融', '營建']:
@@ -197,7 +192,6 @@ def save_to_database(stocks_data: List[Dict], industry_type: str):
                 eps = stock['earnings_per_share']
                 current_pe = stock['price_to_earnings_ratio']
                 
-                # 確保 EPS 和 PE 都是有效值
                 if eps and current_pe and eps != 0 and current_pe > 0:
                     if industry_type == '航運':
                         pe_low = current_pe * 0.6
@@ -209,7 +203,6 @@ def save_to_database(stocks_data: List[Dict], industry_type: str):
                     low_price = round(eps * pe_low, 2)
                     high_price = round(eps * pe_high, 2)
                 else:
-                    # 如果數據無效，使用目前股價作為基準
                     current_price = eps * current_pe if eps and current_pe else 0
                     if current_price > 0:
                         low_price = round(current_price * 0.8, 2)
@@ -231,7 +224,6 @@ def save_to_database(stocks_data: List[Dict], industry_type: str):
             else:
                 fair_price_range = "不予評等"
 
-            # UPSERT 語句（根據不同產業類型）
             if industry_type in ['金融', '營建']:
                 upsert_sql = f"""
                 INSERT INTO {table_name} (
@@ -328,12 +320,11 @@ def main():
     for industry in IndustryType:
         print(f"\n處理 {industry.value} 產業數據...")
         
-        # 讀取Excel特定頁籤的數據
         stocks_data = read_excel_data(excel_file, industry.value)
         if not stocks_data:
             continue
             
-        # 保存到資料庫
+
         save_to_database(stocks_data, industry.value)
         
         print(f"已完成 {industry.value} 產業的資料處理")

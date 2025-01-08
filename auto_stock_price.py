@@ -7,7 +7,6 @@ import os
 
 class ExcelSheetImporter:
     def __init__(self):
-        # 設定日誌
         log_dir = Path.home() / "stock_logs"
         log_dir.mkdir(exist_ok=True)
         log_file = log_dir / "stock_import.log"
@@ -26,7 +25,6 @@ class ExcelSheetImporter:
             'port': '5433'
         }
         
-        # 定義頁籤和表的對應關係
         self.sheet_table_mapping = {
             '金融': 'finance_prices',
             '營建': 'construction_prices',
@@ -37,7 +35,6 @@ class ExcelSheetImporter:
         }
 
     def create_tables(self, conn):
-        """建立所有必要的資料表"""
         cur = conn.cursor()
         
         for table_name in self.sheet_table_mapping.values():
@@ -58,7 +55,6 @@ class ExcelSheetImporter:
         logging.info("所有資料表建立完成")
 
     def process_value(self, value): 
-        """處理價格值，並四捨五入到小數點第二位"""
         try:
             if isinstance(value, str):
                 cleaned_value = value.replace('$', '').strip()
@@ -69,7 +65,6 @@ class ExcelSheetImporter:
             raise
 
     def read_sheet_data(self, excel_path, sheet_name):
-        """讀取指定頁籤的數據"""
         try:
             logging.info(f"開始讀取頁籤 {sheet_name}")
             
@@ -125,7 +120,6 @@ class ExcelSheetImporter:
             return []
 
     def import_all_sheets(self, excel_path):
-        """匯入所有頁籤的數據"""
         conn = None
         try:
             logging.info("開始匯入所有頁籤數據")

@@ -25,7 +25,6 @@ class StockEvaluationSystem:
         )
 
     def get_stock_evaluations(self) -> List[Dict]:
-        """從 stock_all_industry_merge 表獲取並評估所有股票"""
         conn = None
         try:
             conn = psycopg2.connect(**self.db_params)
@@ -51,7 +50,6 @@ class StockEvaluationSystem:
             for stock in stocks:
                 stock_code, stock_name, industry, date, price, fair_range, dividend_yield = stock
                 
-                # 計算評價
                 evaluation = self.evaluate_stock(price, fair_range)
                 
                 results.append({
@@ -75,17 +73,13 @@ class StockEvaluationSystem:
                 conn.close()
 
     def evaluate_stock(self, current_price: float, fair_value_range: str) -> str:
-        """評估股票買賣建議"""
         try:
-            # 解析合理價格區間
             low_str, high_str = fair_value_range.split("~")
             low_price = float(low_str.strip())
             high_price = float(high_str.strip())
             
-            # 計算合理價區間的平均價
             avg_price = (low_price + high_price) / 2
             
-            # 根據原始評價邏輯判斷
             if current_price < low_price:
                 return "加碼"
             elif current_price < avg_price:
@@ -99,7 +93,7 @@ class StockEvaluationSystem:
             logging.error(f"評價計算錯誤: {str(e)}")
             return "不予評價"
 
-# HTML 模板
+# HTML
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="zh-TW">
@@ -496,12 +490,10 @@ HTML_TEMPLATE = """
 
 @app.route('/')
 def index():
-    """渲染主頁"""
     return render_template_string(HTML_TEMPLATE)
 
 @app.route('/api/stocks')
 def get_stocks():
-    """API端點：獲取股票數據"""
     try:
         system = StockEvaluationSystem()
         stocks = system.get_stock_evaluations()
