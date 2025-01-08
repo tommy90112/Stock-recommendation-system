@@ -229,7 +229,7 @@ def save_to_database(stocks_data: List[Dict], industry_type: str):
             if low_price > 0 and high_price > 0:
                 fair_price_range = f"{low_price} ~ {high_price}"
             else:
-                fair_price_range = "無法計算"
+                fair_price_range = "不予評等"
 
             # UPSERT 語句（根據不同產業類型）
             if industry_type in ['金融', '營建']:

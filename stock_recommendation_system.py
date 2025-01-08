@@ -199,14 +199,19 @@ HTML_TEMPLATE = """
             font-weight: 500;
         }
 
-        .rating-cheap {
+        .rating-strong-buy {
+            background-color: #cce5ff;
+            color: #004085;
+        }
+
+        .rating-buy {
             background-color: #d4edda;
             color: #155724;
         }
 
         .rating-fair {
-            background-color: #cce5ff;
-            color: #004085;
+            background-color: #fff3cd;
+            color: #856404;
         }
 
         .rating-expensive {
@@ -368,8 +373,9 @@ HTML_TEMPLATE = """
         function getRatingClass(rating) {
             switch (rating) {
                 case '加碼':
+                    return 'rating-strong-buy';
                 case '便宜':
-                    return 'rating-cheap';
+                    return 'rating-buy';
                 case '合理':
                     return 'rating-fair';
                 case '昂貴':

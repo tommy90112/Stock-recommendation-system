@@ -171,6 +171,7 @@
             justify-content: center;
             gap: 30px;
             margin-top: 40px;
+            padding: 20px;
         }
 
         .system-card {
@@ -179,29 +180,63 @@
             padding: 20px;
             border-radius: 15px;
             background: #fff;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            position: relative;
+            overflow: hidden;
+            backface-visibility: hidden;
+            transform: translateZ(0);
+            -webkit-font-smoothing: subpixel-antialiased;
         }
 
         .system-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .system-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(66, 133, 244, 0.1), rgba(66, 133, 244, 0));
+            transform: trandlateY(100%);
+            transition: transform 0.4s ease;
+        }
+
+        .system-cards:hover::before {
+            transform: trandlateY(0);
         }
 
         .system-card h2 {
             margin-bottom: 15px;
             color: #333;
+            font-size: 1.5em;
+            font-weight: 600;
+        }
+
+        .system_card:hover h2 {
+            color: #4285f4;
         }
 
         .system-card p {
             color: #666;
             font-size: 0.9em;
             line-height: 1.5;
+            text-align: center;
+            max-width: 90%;
+            margin: 0 auto;
+        }
+
+        .system-card:hover p {
+            color: #4285f4;
         }
 
         .logout-btn {
@@ -314,6 +349,36 @@
         .open-dashboard i {
             font-size: 20px;
         }
+
+        #message-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 4px;
+            z-index: 1000;
+            display: none;
+            animation: slideIn 0.3s ease-in-out;
+        }
+
+        @keyframes slideIn {
+            from {
+            transform: translateX(100%);
+            opacity: 0;
+            }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+            }
+        }
+
+        .settings-group input:invalid {
+            border-color: #f44336;
+        }
+
+        .settings-group input:focus:invalid {
+            box-shadow: 0 0 3px #f44336;
+        } 
     </style>
 </head>
 <body>
@@ -338,13 +403,13 @@
             <form id="registerForm">
                 <h1>建立帳號</h1>
                 <div class="input-group">
-                    <input type="text" placeholder="帳號" required />
+                    <input type="text" id="registerUsername" placeholder="帳號" required />
                 </div>
                 <div class="input-group">
-                    <input type="email" placeholder="電子郵件" required />
+                    <input type="email" id="registerEmail" placeholder="電子郵件" required />
                 </div>
                 <div class="input-group">
-                    <input type="password" placeholder="密碼" required />
+                    <input type="password" id="registerPassword" placeholder="密碼" required />
                 </div>
                 <button type="submit">註冊</button>
             </form>
@@ -401,8 +466,12 @@
                     <input type="email" id="settingsEmail" name="email" required>
                 </div>
                 <div class="settings-group">
-                    <label>更改密碼</label>
-                    <input type="password" id="settingsPassword" name="password" placeholder="留空則不變更">
+                    <label>舊密碼</label>
+                    <input type="password" id="settingsOldPassword" name="oldPassword" placeholder="請輸入舊密碼">
+                </div>
+                <div class="settings-group">
+                    <label>新密碼</label>
+                    <input type="password" id="settingsNewPassword" name="newPassword" placeholder="留空則不變更">
                 </div>
                 <button type="submit" class="save-settings">儲存變更</button>
             </form>
@@ -415,11 +484,12 @@
     </button>
 <!-- 添加新的JavaScript代碼 -->
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
     // DOM 元素獲取
     const signUpButton = document.getElementById('signUp');
     const signInButton = document.getElementById('signIn');
-    const mainContainer = document.getElementById('main-container');  // 修正這裡
+    const mainContainer = document.getElementById('main-container');
+    const registerForm = document.getElementById('registerForm');
     const loginForm = document.getElementById('loginForm');
     const dashboard = document.getElementById('dashboard');
     const logoutBtn = document.getElementById('logoutBtn');
@@ -433,29 +503,89 @@
 
     // 註冊和登入面板切換
     signUpButton.addEventListener('click', () => {
-        mainContainer.classList.add('right-panel-active');  // 修正這裡
+        mainContainer.classList.add('right-panel-active');
     });
 
     signInButton.addEventListener('click', () => {
-        mainContainer.classList.remove('right-panel-active');  // 修正這裡
+        mainContainer.classList.remove('right-panel-active');
+    });
+
+    // 處理註冊
+    registerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('registerUsername').value;
+        const email = document.getElementById('registerEmail').value;
+        const password = document.getElementById('registerPassword').value;
+        
+        console.log('註冊資料:', { username, email});
+
+        try{
+            const response = await fetch('http://localhost:3000/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, email, password })
+            });
+
+            console.log('註冊回應:', response);
+
+            const data = await response.json();
+            if (data.success) {
+                alert('註冊成功，請登入');
+                // 切換登入面板
+                mainContainer.classList.remove('right-panel-active');
+                registerForm.reset();
+            } else {
+                alert(data.message || '註冊失敗，請稍後再試');    
+            }
+        } catch (error) {
+            console.error('註冊失敗:', error);
+            alert('註冊失敗，請稍後再試');
+        }
+    });
+
+    // 系統卡片點擊事件
+    backtestingCard.addEventListener('click', () => {
+        window.location.href = 'http://127.0.0.1:5000';
+    });
+
+    recommendationCard.addEventListener('click', () => {
+        window.location.href = 'http://127.0.0.1:8000';
     });
 
     // 處理登入
-    loginForm.addEventListener('submit', (e) => {
+    loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
 
-        if (username && password) {
-            document.querySelector('.sign-in-container').style.display = 'none';
-            document.querySelector('.overlay-container').style.display = 'none';
-            dashboard.style.display = 'block';
-            
-            // 更新用戶資料
-            updateUserInfo({
-                username: username,
-                email: username + '@example.com'
+        try {
+            const response = await fetch('http://localhost:3000/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, password })
             });
+
+            const data = await response.json();
+            if (data.success) {
+                // 儲存用戶資料
+                sessionStorage.setItem('currentUser', JSON.stringify(data.data));
+                // 更新介面
+                document.querySelector('.sign-in-container').style.display = 'none';
+                document.querySelector('.overlay-container').style.display = 'none';
+                dashboard.style.display = 'block';
+                
+                // 更新用戶資料資訊顯示
+                updateUserInfo(data.data);
+            } else {
+                alert(data.message);
+            }
+        } catch (error) {
+            console.error('登入失敗:', error);
+            alert('登入失敗，請稍後再試');
         }
     });
 
@@ -465,18 +595,7 @@
         document.querySelector('.overlay-container').style.display = 'block';
         dashboard.style.display = 'none';
         loginForm.reset();
-        
-        // 確保用戶面板關閉
         userDashboard.classList.remove('active');
-    });
-
-    // 系統卡片點擊事件
-    backtestingCard.addEventListener('click', () => {
-        window.location.href = '#backtesting';
-    });
-
-    recommendationCard.addEventListener('click', () => {
-        window.location.href = '#recommendation';
     });
 
     // 用戶面板相關功能
@@ -493,28 +612,90 @@
     });
 
     // 處理設定表單提交
-    settingsForm.addEventListener('submit', (e) => {
+    settingsForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const username = document.getElementById('settingsUsername').value;
         const email = document.getElementById('settingsEmail').value;
-        const password = document.getElementById('settingsPassword').value;
+        const oldPassword = document.getElementById('settingsOldPassword').value;
+        const newPassword = document.getElementById('settingsNewPassword').value;
 
         if (!username || !email) {
             alert('請填寫用戶名稱和電子信箱');
             return;
         }
 
-        document.getElementById('userDisplayName').textContent = username;
-
-        console.log('儲存設定:', {
-            username,
-            email,
-            passwordChanged: !!password
+        if (oldPassword && newPassword) {
+            try {
+                const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+                const response = await fetch('http://localhost:3000/user/update-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+                username: currentUser.username, 
+                oldPassword: oldPassword, 
+                newPassword: newPassword
+            })
         });
 
+        const data = await response.json();
+        if (data.success) {
+            alert('密碼已成功變更');
+            document.getElementById('settingsOldPassword').value = '';
+            document.getElementById('settingsNewPassword').value = '';
+        } else {
+            alert(data.message || '密碼變更失敗');
+            return;
+        }
+    } catch (error) {
+        console.error('密碼變更失敗:', error);
+        alert('密碼變更失敗，請稍後再試');
+        return;
+    }
+}
+        // 更新用戶資料
+        document.getElementById('userDisplayName').textContent = username;
+
+        // 更新sessionStorage
+        const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+        currentUser.username = username;
+        currentUser.email = email;
+        sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+
         alert('設定已儲存');
-        document.getElementById('settingsPassword').value = '';
     });
+
+// 添加錯誤訊息顯示功能
+function showMessage(message, type = 'error') {
+    // 檢查是否已存在訊息元素，如果沒有則創建
+    let messageElement = document.getElementById('message-container');
+    if (!messageElement) {
+        messageElement = document.createElement('div');
+        messageElement.id = 'message-container';
+        messageElement.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 4px;
+            z-index: 1000;
+            display: none;
+        `;
+        document.body.appendChild(messageElement);
+    }
+
+    // 設置訊息樣式
+    messageElement.style.backgroundColor = type === 'success' ? '#4CAF50' : '#f44336';
+    messageElement.style.color = 'white';
+    messageElement.textContent = message;
+    messageElement.style.display = 'block';
+
+    // 3秒後自動消失
+    setTimeout(() => {
+        messageElement.style.display = 'none';
+    }, 3000);
+}
 
     // 點擊外部關閉面板
     document.addEventListener('click', (e) => {
@@ -527,10 +708,14 @@
 
     // 更新用戶資料的函數
     function updateUserInfo(userData) {
+        console.log('更新用戶資訊:', userData);
         document.getElementById('userDisplayName').textContent = userData.username;
         document.getElementById('settingsUsername').value = userData.username;
         document.getElementById('settingsEmail').value = userData.email;
     }
+
+    // 登入成功後添加日誌
+    console.log('登入成功，用戶資料：', data.data);
 });
 </script>  
 </body>
