@@ -4,14 +4,12 @@ import psycopg2
 from flask_cors import CORS
 import logging
 
-# 設定日誌
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 CORS(app)
 
-# 資料庫連線設定
 db_params = {
     'dbname': 'stock_recommendation_system',
     'user': 'test',
