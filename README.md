@@ -1,6 +1,5 @@
 # 股票推薦系統暨自動化交易機器人
 
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.8%2B-brightgreen.svg)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-2.0.1-lightgrey.svg)](https://flask.palletsprojects.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-13.0-blue.svg)](https://www.postgresql.org/)
