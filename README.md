@@ -1,4 +1,4 @@
-# 股票推薦系統暨自動化交易機器人
+# 股票推薦系統暨選股聊天機器人
 
 [![Python](https://img.shields.io/badge/Python-3.8%2B-brightgreen.svg)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-2.0.1-lightgrey.svg)](https://flask.palletsprojects.com/)
